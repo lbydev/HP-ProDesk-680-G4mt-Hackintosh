@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+    - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Export version
+        id: version
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Package to zip
+        id: zip
+        run: |
+          filename=HP-ProDesk-680-G4mt-${{ steps.version.outputs.tag }}.zip
+          zip -r ${filename} ./*
+          echo ::set-output name=filename::${filename}
+
+      - name: Install git-chglog
+        uses: craicoverflow/install-git-chglog@v1
+
+      - name: Generate changelog
+        run: git-chglog -o ${{ steps.version.outputs.tag }}.md ${{ steps.version.outputs.tag }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          files: ${{ steps.zip.outputs.filename }}
+          body_path: ${{ steps.version.outputs.tag }}.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

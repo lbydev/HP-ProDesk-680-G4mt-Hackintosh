@@ -1,0 +1,30 @@
+name: Analyze
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  analyze-oc-config:
+    runs-on: macos-latest
+    name: Analyze OpenCore Configs
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependency
+        run: |
+          mkdir "tmp" && cd "tmp" || exit 1
+          curl -# -L -O https://github.com/acidanthera/OpenCorePkg/releases/download/{$OC_VERSION}/OpenCore-{$OC_VERSION}-RELEASE.zip || exit 1
+          unzip -qq "*.zip" || exit 1
+          chmod +x Utilities/ocvalidate/ocvalidate || exit 1
+        env:
+          OC_VERSION: 0.7.6
+
+      - name: Run ocvalidate
+        run: |
+          ./tmp/Utilities/ocvalidate/ocvalidate ./Opencore/MontereyEFI/OC/config.plist || exit 1
